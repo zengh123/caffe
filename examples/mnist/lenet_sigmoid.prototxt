@@ -1,9 +1,40 @@
-name: "mnist_siamese"
-input: "data"
-input_dim: 10000
-input_dim: 1
-input_dim: 28
-input_dim: 28
+name: "LeNet"
+layer {
+  name: "mnist"
+  type: "Data"
+  top: "data"
+  top: "label"
+  include {
+    phase: TRAIN
+  }
+  transform_param {
+    scale: 0.00390625
+  }
+  data_param {
+    source: "examples/mnist/mnist_train_lmdb"
+    batch_size: 64
+    backend: LMDB
+  }
+}
+layer {
+  name: "mnist"
+  type: "Data"
+  top: "data"
+  top: "label"
+  include {
+    phase: TEST
+  }
+  transform_param {
+    scale: 0.00390625
+  }
+  data_param {
+    source: "examples/mnist/mnist_test_lmdb"
+    batch_size: 100
+    backend: LMDB
+  }
+}
+
+
 layer {
   name: "conv1"
   type: "Convolution"
@@ -19,6 +50,12 @@ layer {
     num_output: 20
     kernel_size: 5
     stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
   }
 }
 layer {
@@ -47,6 +84,12 @@ layer {
     num_output: 50
     kernel_size: 5
     stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
   }
 }
 layer {
@@ -73,6 +116,12 @@ layer {
   }
   inner_product_param {
     num_output: 500
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
   }
 }
 layer {
@@ -94,20 +143,29 @@ layer {
   }
   inner_product_param {
     num_output: 10
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
   }
 }
 layer {
-  name: "feat"
-  type: "InnerProduct"
+  name: "loss"
+  type: "SigmoidCrossEntropyLoss"
   bottom: "ip2"
-  top: "feat"
-  param {
-    lr_mult: 1
-  }
-  param {
-    lr_mult: 2
-  }
-  inner_product_param {
-    num_output: 2
+  bottom: "label"
+  top: "loss"
+}
+
+layer {
+  name: "accuracy"
+  type: "MultiLabelAccuracy"
+  bottom: "ip2"
+  bottom: "label"
+  top: "accu"
+  include {
+    phase: TEST
   }
 }

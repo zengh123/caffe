@@ -271,6 +271,7 @@ void Solver<Dtype>::Solve(const char* resume_file) {
 
 template <typename Dtype>
 void Solver<Dtype>::TestAll() {
+  LOG(INFO) << "test_nets_.size();"<<test_nets_.size();
   for (int test_net_id = 0; test_net_id < test_nets_.size(); ++test_net_id) {
     Test(test_net_id);
   }
@@ -287,6 +288,8 @@ void Solver<Dtype>::Test(const int test_net_id) {
   vector<Blob<Dtype>*> bottom_vec;
   const shared_ptr<Net<Dtype> >& test_net = test_nets_[test_net_id];
   Dtype loss = 0;
+  LOG(INFO) << "TIANYU MEIMEI HAO KE AI" << param_.test_iter(test_net_id);
+  
   for (int i = 0; i < param_.test_iter(test_net_id); ++i) {
     Dtype iter_loss;
     const vector<Blob<Dtype>*>& result =
@@ -294,9 +297,11 @@ void Solver<Dtype>::Test(const int test_net_id) {
     if (param_.test_compute_loss()) {
       loss += iter_loss;
     }
+    //LOG(INFO) << "result.size():" <<result.size();//2
     if (i == 0) {
       for (int j = 0; j < result.size(); ++j) {
         const Dtype* result_vec = result[j]->cpu_data();
+        //LOG(INFO) << "esult[j]->count()" << result[j]->count(); //5,1;accu and
         for (int k = 0; k < result[j]->count(); ++k) {
           test_score.push_back(result_vec[k]);
           test_score_output_id.push_back(j);

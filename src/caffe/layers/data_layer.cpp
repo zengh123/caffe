@@ -24,6 +24,7 @@ DataLayer<Dtype>::~DataLayer<Dtype>() {
 template <typename Dtype>
 void DataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) {
+  //TODO: cannot localize where to set [this->output_labels_]
   // Initialize DB
   db_.reset(db::GetDB(this->layer_param_.data_param().backend()));
   db_->Open(this->layer_param_.data_param().source(), db::READ);
@@ -54,10 +55,21 @@ void DataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
       << top[0]->width();
   // label
   if (this->output_labels_) {
-    vector<int> label_shape(1, this->layer_param_.data_param().batch_size());
+    //vector<int> label_shape(1, this->layer_param_.data_param().batch_size());
+    //top[1]->Reshape(label_shape);
+    //this->prefetch_label_.Reshape(label_shape);
+    CHECK_GT(datum.label_size(), 0) << "Datum should contain labels for top";
+    vector<int> label_shape(4,1);
+    label_shape[0] = this->layer_param_.data_param().batch_size();
+    label_shape[1] = datum.label_size();
     top[1]->Reshape(label_shape);
     this->prefetch_label_.Reshape(label_shape);
-  }
+    LOG(INFO) << "output label size: " << top[1]->num() << ","
+      << top[1]->channels() << "," << top[1]->height() << ","
+      << top[1]->width();
+
+  } 
+  LOG(INFO)<<"ZHEERZOUWAN";
 }
 
 // This function is used to create a thread that prefetches the data.
@@ -70,6 +82,8 @@ void DataLayer<Dtype>::InternalThreadEntry() {
   CPUTimer timer;
   CHECK(this->prefetch_data_.count());
   CHECK(this->transformed_data_.count());
+  
+  int num_labels = 0;
 
   // Reshape according to the first datum of each batch
   // on single input batches allows for inputs of varying dimension.
@@ -83,15 +97,19 @@ void DataLayer<Dtype>::InternalThreadEntry() {
   top_shape[0] = batch_size;
   this->prefetch_data_.Reshape(top_shape);
 
+  //LOG(INFO) << "tian yu jia wo";
   Dtype* top_data = this->prefetch_data_.mutable_cpu_data();
   Dtype* top_label = NULL;  // suppress warnings about uninitialized variables
 
   if (this->output_labels_) {
     top_label = this->prefetch_label_.mutable_cpu_data();
+    num_labels = this->prefetch_label_.channels();
   }
   timer.Start();
+  
   for (int item_id = 0; item_id < batch_size; ++item_id) {
     // get a datum
+    //LOG(INFO) << "item_id"  << item_id;
     Datum datum;
     datum.ParseFromString(cursor_->value());
     read_time += timer.MicroSeconds();
@@ -102,7 +120,12 @@ void DataLayer<Dtype>::InternalThreadEntry() {
     this->data_transformer_->Transform(datum, &(this->transformed_data_));
     // Copy label.
     if (this->output_labels_) {
-      top_label[item_id] = datum.label();
+      //top_label[item_id] = datum.label();
+      for (int l = 0; l < num_labels; ++l)
+      {
+        top_label[item_id*num_labels + l] = datum.label(l);
+      }
+
     }
     trans_time += timer.MicroSeconds();
     timer.Start();

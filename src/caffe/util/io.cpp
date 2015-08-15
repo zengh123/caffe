@@ -12,6 +12,7 @@
 #include <fstream>  // NOLINT(readability/streams)
 #include <string>
 #include <vector>
+#include <utility>
 
 #include "caffe/common.hpp"
 #include "caffe/proto/caffe.pb.h"
@@ -111,7 +112,10 @@ static bool matchExt(const std::string & fn,
     return true;
   return false;
 }
-bool ReadImageToDatum(const string& filename, const int label,
+
+//TODO: This change I can only understand part of it. Remaind to be confirm its validation
+//bool ReadImageToDatum(const string& filename, const int label,
+bool ReadImage(const string& filename,
     const int height, const int width, const bool is_color,
     const std::string & encoding, Datum* datum) {
   cv::Mat cv_img = ReadImageToCVMat(filename, height, width, is_color);
@@ -119,23 +123,101 @@ bool ReadImageToDatum(const string& filename, const int label,
     if (encoding.size()) {
       if ( (cv_img.channels() == 3) == is_color && !height && !width &&
           matchExt(filename, encoding) )
-        return ReadFileToDatum(filename, label, datum);
+        //TODO:
+        //return ReadFileToDatum(filename, label, datum);
+        return ReadFileToDatum(filename, datum);
       std::vector<uchar> buf;
       cv::imencode("."+encoding, cv_img, buf);
       datum->set_data(std::string(reinterpret_cast<char*>(&buf[0]),
                       buf.size()));
-      datum->set_label(label);
+//      datum->set_label(label);
       datum->set_encoded(true);
       return true;
     }
     CVMatToDatum(cv_img, datum);
-    datum->set_label(label);
+//    datum->set_label(label);
     return true;
   } else {
     return false;
   }
 }
 
+//TODO: 
+bool ReadImageToDatum(const string& filename, const int label,
+    const int height, const int width, const bool is_color,
+    const std::string & encoding, Datum* datum) {
+
+    if (ReadImage(filename,height,width,is_color,encoding,datum))
+    {
+      if (datum->label_size() > 0)
+      {
+        datum->set_label(0,label);
+      }
+      else
+      {
+        datum->add_label(label);
+      }
+      return true;
+    }
+    else
+    {
+      return false;
+    }
+}
+//TODO: Still confused
+bool ReadImageToDatum(const string& filename, const std::vector<int> labels,
+    const int height, const int width, const bool is_color,
+    const std::string & encoding, Datum* datum) {
+  if(labels.size() > 0){
+    if (ReadImageToDatum(filename,labels[0],height,width,is_color,encoding,datum))
+    {
+      for (int i = 1; i < labels.size(); ++i)
+      {
+        if (datum->label_size() <= i)
+        {
+          datum->add_label(labels[i]);
+        }
+        else
+        {
+          datum->set_label(i,labels[i]);
+        }
+      }
+      return true;
+    }
+    else
+    {
+      return false;
+    }
+  }
+  else
+  {
+    return ReadImage(filename,height,width,is_color,encoding,datum);
+  }
+}
+
+
+
+//TODO:
+bool ReadFileToDatum(const string& filename, 
+    Datum* datum) {
+  std::streampos size;
+
+  fstream file(filename.c_str(), ios::in|ios::binary|ios::ate);
+  if (file.is_open()) {
+    size = file.tellg();
+    std::string buffer(size, ' ');
+    file.seekg(0, ios::beg);
+    file.read(&buffer[0], size);
+    file.close();
+    datum->set_data(buffer);
+    datum->set_encoded(true);
+    return true;
+  } else {
+    return false;
+  }
+}
+
+/*
 bool ReadFileToDatum(const string& filename, const int label,
     Datum* datum) {
   std::streampos size;
@@ -155,7 +237,7 @@ bool ReadFileToDatum(const string& filename, const int label,
     return false;
   }
 }
-
+*/ 
 cv::Mat DecodeDatumToCVMatNative(const Datum& datum) {
   cv::Mat cv_img;
   CHECK(datum.encoded()) << "Datum not encoded";

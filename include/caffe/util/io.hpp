@@ -3,6 +3,8 @@
 
 #include <unistd.h>
 #include <string>
+#include <vector>
+#include <utility>
 
 #include "google/protobuf/message.h"
 
@@ -81,11 +83,21 @@ inline void WriteProtoToBinaryFile(
   WriteProtoToBinaryFile(proto, filename.c_str());
 }
 
-bool ReadFileToDatum(const string& filename, const int label, Datum* datum);
+//todo:
+bool ReadFileToDatum(const string& filename, Datum* datum);
+//bool ReadFileToDatum(const string& filename, const int label, Datum* datum);
 
+/*
 inline bool ReadFileToDatum(const string& filename, Datum* datum) {
-  return ReadFileToDatum(filename, -1, datum);
+//  return ReadFileToDatum(filename, -1, datum);
+  return ReadFileToDatum(filename,  datum);
 }
+*/
+//TODO: I still do not read through this
+
+bool ReadImageToDatum(const string& filename, const std::vector<int> labels,
+    const int height, const int width, const bool is_color,
+    const std::string & encoding, Datum* datum);
 
 bool ReadImageToDatum(const string& filename, const int label,
     const int height, const int width, const bool is_color,
