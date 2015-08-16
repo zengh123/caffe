@@ -93,7 +93,8 @@ void DataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
   if (this->output_labels_) {
     top_label = batch->label_.mutable_cpu_data();
     //TODO: here whether is batch-> or this-> remained to be found
-    num_labels = batch->prefetch_label_.channels();
+    //Debug tells us it is batch->
+    num_labels = batch->label_.channels();
   }
   for (int item_id = 0; item_id < batch_size; ++item_id) {
     timer.Start();

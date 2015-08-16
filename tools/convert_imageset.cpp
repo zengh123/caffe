@@ -42,6 +42,20 @@ DEFINE_bool(encoded, false,
 DEFINE_string(encode_type, "",
     "Optional: What type should we encode the image as ('png','jpg',...).");
 
+
+//e.g.
+//build/tools/convert_imageset 
+//--resize_height=32 --resize_width=32 ./ examples/cifar10/file_list.txt examples/cifar10/test_lmdb
+/*
+arg:4
+build/tools/convert_imageset
+./
+examples/cifar10/file_list.txt
+examples/cifar10/test_lmdb
+*/
+
+// echo 'examples/images/cat.jpg 0' > examples/cifar10/file_list.txt
+// 0 is cls ind
 int main(int argc, char** argv) {
   ::google::InitGoogleLogging(argv[0]);
 
@@ -67,13 +81,17 @@ int main(int argc, char** argv) {
   const bool encoded = FLAGS_encoded;
   const string encode_type = FLAGS_encode_type;
 
-  std::ifstream infile(argv[2]);
-  std::vector<std::pair<std::string, int> > lines;
-  std::string filename;
-  int label;
-  while (infile >> filename >> label) {
-    lines.push_back(std::make_pair(filename, label));
-  }
+  //std::ifstream infile(argv[2]);
+  //std::vector<std::pair<std::string, int> > lines;
+  //std::string filename;
+  //int label;
+  //while (infile >> filename >> label) {
+  //  lines.push_back(std::make_pair(filename, label));
+  //}
+  std::vector<std::pair<std::string, std::vector<int> > > lines;
+  ReadImagesList(argv[2], &lines);
+  //here the provided file should include label as 001010110 for each line
+
   if (FLAGS_shuffle) {
     // randomly shuffle data
     LOG(INFO) << "Shuffling data";
@@ -113,9 +131,12 @@ int main(int argc, char** argv) {
       enc = fn.substr(p);
       std::transform(enc.begin(), enc.end(), enc.begin(), ::tolower);
     }
+    //for multi-label: lines[line_id].second 's type == std::vector<int> labels
+    //namely 2nd: a vector of labels 1st: name of file name
     status = ReadImageToDatum(root_folder + lines[line_id].first,
         lines[line_id].second, resize_height, resize_width, is_color,
         enc, &datum);
+
     if (status == false) continue;
     if (check_size) {
       if (!data_size_initialized) {
