@@ -106,17 +106,38 @@ void convert_dataset(const char* image_filename, const char* label_filename,
   char key_cstr[kMaxKeyLength];
   string value;
 
-  Datum datum;
-  datum.set_channels(1);
-  datum.set_height(rows);
-  datum.set_width(cols);
+
   LOG(INFO) << "A total of " << num_items << " items.";
   LOG(INFO) << "Rows: " << rows << " Cols: " << cols;
+  printf("num_items:%d\n",num_items);
   for (int item_id = 0; item_id < num_items; ++item_id) {
+
+    Datum datum;
+    datum.set_channels(1);
+    datum.set_height(rows);
+    datum.set_width(cols);
+
+    if (item_id%1000 == 0)
+    {
+      printf("turn:%d\n", item_id);
+    }
     image_file.read(pixels, rows * cols);
     label_file.read(&label, 1);
     datum.set_data(pixels, rows*cols);
-    datum.set_label(label);
+     //datum.set_label(label);
+    //datum.add_label(label);
+    //TODO: here I only modify the contents of labels to binary form
+    //It remains to be confirmed whether it works or not.
+    //printf("WHY ty?\n");
+    for (int l = 0; l < kMaxKeyLength; ++l)
+    {
+     // printf("%d", l);
+      if(l == label){datum.add_label(1);}
+      else{datum.add_label(0);}
+    }
+    //printf("ty:%d\n", item_id);
+    //printf("    label:%d\n", label);
+    //printf("\n");
     snprintf(key_cstr, kMaxKeyLength, "%08d", item_id);
     datum.SerializeToString(&value);
     string keystr(key_cstr);
@@ -152,6 +173,7 @@ void convert_dataset(const char* image_filename, const char* label_filename,
     }
   }
   // write the last batch
+  printf("write last batch\n");
   if (count % 1000 != 0) {
     if (db_backend == "leveldb") {  // leveldb
       db->Write(leveldb::WriteOptions(), batch);

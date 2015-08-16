@@ -38,6 +38,8 @@ void DataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
   // Reshape top[0] and prefetch_data according to the batch_size.
   top_shape[0] = batch_size;
   top[0]->Reshape(top_shape);
+  //printf("PREFETCH_COUNT in data layer : %d\n", this->PREFETCH_COUNT);
+  //PREFETCH_COUNT = 3 for CPU/GPU
   for (int i = 0; i < this->PREFETCH_COUNT; ++i) {
     this->prefetch_[i].data_.Reshape(top_shape);
   }
@@ -46,11 +48,18 @@ void DataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
       << top[0]->width();
   // label
   if (this->output_labels_) {
-    vector<int> label_shape(1, batch_size);
+    //vector<int> label_shape(1, batch_size);
+    CHECK_GT(datum.label_size(), 0) << "Datum should contain labels for top";
+    vector<int> label_shape(4,1);
+    label_shape[0] = batch_size;
+    label_shape[1] = datum.label_size();
     top[1]->Reshape(label_shape);
-    for (int i = 0; i < this->PREFETCH_COUNT; ++i) {
+    for (int i = 0; i < this->PREFETCH_COUNT; ++i) {    
       this->prefetch_[i].label_.Reshape(label_shape);
     }
+  LOG(INFO) << "output label size: " << top[1]->num() << ","
+       << top[1]->channels() << "," << top[1]->height() << ","
+       << top[1]->width();
   }
 }
 
@@ -79,8 +88,12 @@ void DataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
   Dtype* top_data = batch->data_.mutable_cpu_data();
   Dtype* top_label = NULL;  // suppress warnings about uninitialized variables
 
+  int num_labels = 0;
+
   if (this->output_labels_) {
     top_label = batch->label_.mutable_cpu_data();
+    //TODO: here whether is batch-> or this-> remained to be found
+    num_labels = batch->prefetch_label_.channels();
   }
   for (int item_id = 0; item_id < batch_size; ++item_id) {
     timer.Start();
@@ -94,7 +107,11 @@ void DataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
     this->data_transformer_->Transform(datum, &(this->transformed_data_));
     // Copy label.
     if (this->output_labels_) {
-      top_label[item_id] = datum.label();
+      //top_label[item_id] = datum.label();
+      for (int l = 0; l < num_labels; ++l)
+      {
+        top_label[item_id*num_labels + l] = datum.label(l);
+      }
     }
     trans_time += timer.MicroSeconds();
 
