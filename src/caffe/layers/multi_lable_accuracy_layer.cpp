@@ -58,7 +58,7 @@ void MultiLabelAccuracyLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bot
   const Dtype* bottom_label = bottom[1]->cpu_data();
   // Dtype* bottom_diff = bottom[0]->mutable_cpu_diff();
   int count = bottom[0]->count();
-  //LOG(INFO) << "count: TIANYU " <<count;
+  
   for (int ind = 0; ind < count; ++ind) {
 	  int label = static_cast<int>(bottom_label[ind]);
 	  if (label == 1 )
