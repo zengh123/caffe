@@ -79,8 +79,12 @@ void MultiLabelAccuracyLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bot
   Dtype specificity = (count_neg > 0)? (true_negative / count_neg) : 0;
   Dtype harmmean = ((count_pos + count_neg) > 0)?
     2 / (count_pos / true_positive + count_neg / true_negative) : 0;
-  Dtype precission = (true_positive > 0)?
-    (true_positive / (true_positive + false_positive)) : 0;
+//  Dtype precission = (true_positive > 0)?
+//    (true_positive / (true_positive + false_positive)) : 0;
+  //this metric is made by Johnny  
+  Dtype precission = (count > 0)?
+    ( (true_positive + true_negative) / count) : 0;
+
   Dtype f1_score = (true_positive > 0)?
     2 * true_positive /
     (2 * true_positive + false_positive + false_negative) : 0;
