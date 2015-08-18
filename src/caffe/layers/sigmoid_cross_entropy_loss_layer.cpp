@@ -17,6 +17,9 @@ void SigmoidCrossEntropyLossLayer<Dtype>::LayerSetUp(
   sigmoid_top_vec_.clear();
   sigmoid_top_vec_.push_back(sigmoid_output_.get());
   sigmoid_layer_->SetUp(sigmoid_bottom_vec_, sigmoid_top_vec_);
+    // Set Weight4pos
+  int USEWEIGHT = this->layer_param_.sig_param().use_weight();
+  LOG(INFO) << "USEWEIGHT:" << USEWEIGHT;
 }
 
 template <typename Dtype>
@@ -30,7 +33,7 @@ void SigmoidCrossEntropyLossLayer<Dtype>::Reshape(
 
 template <typename Dtype>
 void SigmoidCrossEntropyLossLayer<Dtype>::Forward_cpu(
-    const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
+    const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) { 
   // The forward pass computes the sigmoid outputs.
   sigmoid_bottom_vec_[0] = bottom[0];
   sigmoid_layer_->Forward(sigmoid_bottom_vec_, sigmoid_top_vec_);

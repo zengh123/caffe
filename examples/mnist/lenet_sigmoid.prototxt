@@ -157,6 +157,9 @@ layer {
   bottom: "ip2"
   bottom: "label"
   top: "loss"
+#  sig_param {
+#    use_weight: false
+#  }
 }
 
 layer {
