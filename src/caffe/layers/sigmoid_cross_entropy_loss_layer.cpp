@@ -87,6 +87,7 @@ template <typename Dtype>
 void SigmoidCrossEntropyLossLayer<Dtype>::Backward_cpu(
     const vector<Blob<Dtype>*>& top, const vector<bool>& propagate_down,
     const vector<Blob<Dtype>*>& bottom) {
+  bool USEWEIGHT = this->layer_param_.sig_param().use_weight();
   if (propagate_down[1]) {
     LOG(FATAL) << this->type()
                << " Layer cannot backpropagate to label inputs.";
@@ -101,7 +102,31 @@ void SigmoidCrossEntropyLossLayer<Dtype>::Backward_cpu(
     caffe_sub(count, sigmoid_output_data, target, bottom_diff);
     // Scale down gradient
     const Dtype loss_weight = top[0]->cpu_diff()[0];
+    // TODO: how loss_weight evolve from prop loss
+    // TODO: find a way to allocate the weight
+
     caffe_scal(count, loss_weight / num, bottom_diff);
+    if (USEWEIGHT == true)
+    {
+      Dtype* weight_array = NULL;
+      int pos_targetnum = 0;
+      int neg_targetnum = 0;
+      for (int idx = 0; idx < count; ++idx)
+      {
+        if (target[idx] == 1)
+          pos_targetnum++;
+        else
+          neg_targetnum++;
+      }
+      for (int idx = 0; idx < count; ++idx)
+      {
+        if (target[idx] == 1)
+          weight_array[idx] = 0.5*num / pos_targetnum ;
+        else
+          weight_array[idx] = 0.5*num / neg_targetnum ;
+      }     
+      caffe_mul(count,bottom_diff,weight_array,bottom_diff);
+    }
   }
 }
 
