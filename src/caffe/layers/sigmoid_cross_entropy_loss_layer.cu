@@ -20,6 +20,7 @@ void SigmoidCrossEntropyLossLayer<Dtype>::Backward_gpu(
     // First, compute the diff
     const int count = bottom[0]->count();
     const int num = bottom[0]->num();
+    const int channels = bottom[0]->channels();
     const Dtype* sigmoid_output_data = sigmoid_output_->gpu_data();
     const Dtype* target_g = bottom[1]->gpu_data();
     Dtype* bottom_diff = bottom[0]->mutable_gpu_diff();
@@ -30,7 +31,7 @@ void SigmoidCrossEntropyLossLayer<Dtype>::Backward_gpu(
     caffe_gpu_scal(count, loss_weight / num, bottom_diff);
 
     bool USEWEIGHT = this->layer_param_.sig_param().use_weight();
-    LOG(INFO) << "USEWEIGHT" << USEWEIGHT;
+//    LOG(INFO) << "USEWEIGHT" << USEWEIGHT;
     const Dtype* target = bottom[1]->cpu_data();
 
     if (USEWEIGHT == true)
@@ -39,25 +40,18 @@ void SigmoidCrossEntropyLossLayer<Dtype>::Backward_gpu(
       memset(weight_array,0,sizeof(weight_array));
       Dtype *d_weight_array;
       cudaMalloc((void **)&d_weight_array,sizeof(weight_array));
-      int pos_targetnum = 0;
-      int neg_targetnum = 0;
-
-      for (int idx = 0; idx < count; ++idx)
+      int idx = 0;
+      for (int i = 0; i < num; ++i)
       {
-        if (target[idx] == 1)
+        for (int j = 0; j < channels; ++j)
         {
-          pos_targetnum++;
+          idx = i*channels+j;
+          if (target[idx] == 1)
+            weight_array[idx] =  datadepend_k[j];
+          else
+            weight_array[idx] =  datadepend_k[channels+j];
         }
-        else
-          neg_targetnum++;
-      }
 
-      for (int idx = 0; idx < count; ++idx)
-      {
-        if (target[idx] == 1)
-          weight_array[idx] = 0.5*num / pos_targetnum ;
-        else
-          weight_array[idx] = 0.5*num / neg_targetnum ;
       }     
 
 

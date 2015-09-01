@@ -19,7 +19,17 @@ void SigmoidCrossEntropyLossLayer<Dtype>::LayerSetUp(
   sigmoid_layer_->SetUp(sigmoid_bottom_vec_, sigmoid_top_vec_);
     // Set Weight4pos
   bool USEWEIGHT = this->layer_param_.sig_param().use_weight();
-  LOG(INFO) << "USEWEIGHT:" << USEWEIGHT;
+
+  std::ifstream ifile("/home/zengh/example.txt", std::ios::in);
+  if (!ifile.is_open()) {
+      std::cerr << "There was a problem opening the input file!\n";
+      exit(1);
+  }
+  double num = 0.0;
+  while (ifile >> num) {
+      datadepend_k.push_back(num);
+  }
+ 
 }
 
 template <typename Dtype>
@@ -46,32 +56,24 @@ void SigmoidCrossEntropyLossLayer<Dtype>::Forward_cpu(
   const Dtype* input_data = bottom[0]->cpu_data();
   const Dtype* target = bottom[1]->cpu_data();
   Dtype loss = 0;
-  Dtype pos_loss = 0;
-  Dtype neg_loss = 0;
-  Dtype p_avg_loss = 0;
-  Dtype n_avg_loss = 0;
 
-  int pos_targetnum = 0;
-  int neg_targetnum = 0;
-  // To achieve the same order of magnitude without using weight
-  // we mulitply it with channels firstly
+
   if (USEWEIGHT == true){
-    for (int i = 0; i < count; ++i) {
-      if (target[i] == 1){
-        pos_targetnum++;
-        pos_loss -= input_data[i] * (target[i] - (input_data[i] >= 0)) -
-          log(1 + exp(input_data[i] - 2 * input_data[i] * (input_data[i] >= 0)));
+    double cur_weight = 0;
+    int ind = 0;
+    for (int i = 0; i < num; ++i) {
+      for (int j = 0; j < channels; ++j)
+      {
+        ind = i*channels+j;
+        if (target[ind] == 1)
+          cur_weight = datadepend_k[j];
+        else       
+          cur_weight = datadepend_k[channels+j];
+        loss -= cur_weight * (input_data[ind] * (target[ind] - (input_data[ind] >= 0)) -
+          log(1 + exp(input_data[ind] - 2 * input_data[ind] * (input_data[ind] >= 0))));
       }
-      else{        
-        neg_targetnum++;
-        neg_loss -= input_data[i] * (target[i] - (input_data[i] >= 0)) -
-          log(1 + exp(input_data[i] - 2 * input_data[i] * (input_data[i] >= 0)));
-      }
-    }
-
-    p_avg_loss = pos_targetnum>0? pos_loss / pos_targetnum : 0;
-    n_avg_loss = neg_targetnum>0? neg_loss / neg_targetnum : 0;
-    loss = 0.5 * (p_avg_loss + n_avg_loss) * channels;
+     }
+     
   }
   else{
     for (int i = 0; i < count; ++i) {
@@ -79,7 +81,7 @@ void SigmoidCrossEntropyLossLayer<Dtype>::Forward_cpu(
         log(1 + exp(input_data[i] - 2 * input_data[i] * (input_data[i] >= 0)));
     }
   }
-
+  
   top[0]->mutable_cpu_data()[0] = loss / num;
 }
 
