@@ -129,6 +129,9 @@ inline bool ReadImageToDatum(const string& filename, const int label,
   return ReadImageToDatum(filename, label, 0, 0, true, encoding, datum);
 }
 
+void ReadImagesList(const string& source,
+    std::vector<std::pair<std::string, std::vector<int> > >* images_vec);
+
 bool DecodeDatumNative(Datum* datum);
 bool DecodeDatum(Datum* datum, bool is_color);
 

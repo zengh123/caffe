@@ -126,18 +126,12 @@ void convert_dataset(const char* image_filename, const char* label_filename,
     datum.set_data(pixels, rows*cols);
      //datum.set_label(label);
     //datum.add_label(label);
-    //TODO: here I only modify the contents of labels to binary form
-    //It remains to be confirmed whether it works or not.
-    //printf("WHY ty?\n");
     for (int l = 0; l < kMaxKeyLength; ++l)
     {
-     // printf("%d", l);
       if(l == label){datum.add_label(1);}
       else{datum.add_label(0);}
     }
-    //printf("ty:%d\n", item_id);
-    //printf("    label:%d\n", label);
-    //printf("\n");
+
     snprintf(key_cstr, kMaxKeyLength, "%08d", item_id);
     datum.SerializeToString(&value);
     string keystr(key_cstr);
