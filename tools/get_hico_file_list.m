@@ -11,9 +11,10 @@ fileID = fopen(RESULT_FILE,'w');
 if(strcmp(set,'test') == 1)
 file_len_test = size(list_test,1);
     for i=1:file_len_test
-       temp = strsplit(char(list_test(i)),'.'); 
-       filename = char(temp(1));
-       fprintf(fileID, '%s ', filename);
+       %temp = strsplit(char(list_test(i)),'.'); 
+       %filename = char(temp(1));
+       %fprintf(fileID, '%s ', filename);
+       fprintf(fileID, '%s ', char(list_test(i)));
        for j = 1:600
         fprintf(fileID,'%d ',anno_test(j,i)>0);
        end
